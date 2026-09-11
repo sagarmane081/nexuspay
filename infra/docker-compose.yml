@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexuspay-postgres
+    environment:
+      POSTGRES_DB: nexuspay
+      POSTGRES_USER: nexuspay
+      POSTGRES_PASSWORD: nexuspay
+    ports:
+      - "5432:5432"
+    volumes:
+      - nexuspay-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexuspay -d nexuspay"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  nexuspay-postgres-data:

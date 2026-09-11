@@ -1,0 +1,31 @@
+# Java / Maven
+payment-core/target/
+*.class
+
+# Python
+data-hub/.venv/
+data-hub/venv/
+**/__pycache__/
+*.pyc
+data-hub/.pytest_cache/
+data-hub/*.egg-info/
+data-hub/build/
+data-hub/dist/
+
+# Spark / Delta local metastore + warehouse
+data-hub/spark-warehouse/
+data-hub/metastore_db/
+data-hub/derby.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+*.local.yml

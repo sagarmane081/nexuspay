@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: payment-core
+  datasource:
+    url: jdbc:postgresql://localhost:5432/nexuspay
+    username: nexuspay
+    password: nexuspay
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
