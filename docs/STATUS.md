@@ -34,6 +34,7 @@ decision, because the project's value is still that Sagar can defend it.
 | 1.6 Double-entry ledger | Done — 140 tests green |
 | **Phase 1 complete** | payment-core invariants hold under Testcontainers |
 | 2.1 Synthetic data generator | Done — 40 data-hub tests green |
+| 2.2 Lakehouse basics + Bronze | Done — 60 data-hub tests green |
 
 ### Verified, versus merely written
 
@@ -180,6 +181,19 @@ infra/docker-compose.yml        PostgreSQL only
 - **The generator never reads the wall clock.** Every timestamp derives from
   `business_date`, and every identifier from the seeded RNG. Verified by
   injecting `time.time()` and confirming both determinism tests fail.
+- **Spark on Windows needs winutils to write anything.** Reads and computes
+  work without it, which is why a smoke test that only counts rows passes.
+  `pipelines/spark.py` installs `winutils.exe` + `hadoop.dll` (Hadoop 3.3.6
+  community build) into `data-hub/hadoop/`, on Windows only. CI on Linux needs
+  neither.
+- **Delta JARs are pinned, not resolved through Ivy.** `configure_spark_with_delta_pip`
+  consults the local Maven cache first; payment-core's builds had left a
+  POM-only entry for `log4j-core:2.25.3`, and Ivy aborts rather than falling
+  through to Maven Central. The JARs are downloaded once into `data-hub/jars/`.
+- **Bronze reads everything as a string and rejects nothing.** Casting there
+  would turn a bad row into a null before Silver could quarantine it with a
+  reason. The one exception is a file whose name disagrees with its rows, which
+  is refused outright.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.

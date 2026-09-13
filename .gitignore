@@ -29,3 +29,10 @@ Thumbs.db
 # Env
 .env
 *.local.yml
+
+# data-hub runtime artifacts (downloaded or generated, never committed)
+data-hub/jars/
+data-hub/hadoop/
+data-hub/landing/
+data-hub/lakehouse/
+data-hub/.ivy/

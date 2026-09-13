@@ -111,8 +111,9 @@ with a synthetic generator.
 ### 2.2 Lakehouse basics + Bronze
 - **Learn:** data lake vs warehouse vs lakehouse; medallion architecture; Spark
   DataFrames and lazy evaluation; Delta Lake transaction log and ACID.
-- [ ] Local Spark + Delta setup; landing folder (local or S3-compatible) *(C)*
-- [ ] Bronze ingestion: raw, append-only, adds `source_file`, `ingested_at`, `batch_id` *(S)*
+- [x] Local Spark + Delta setup; landing folder — `pipelines/spark.py`
+- [x] Bronze ingestion: raw, append-only, adds `source_file`, `ingested_at`; verifies the
+  file name against row `batch_id`/`schema_version`
 - **Tests:** row count in Bronze = rows in source files; re-ingesting the same file
   adds nothing.
 
