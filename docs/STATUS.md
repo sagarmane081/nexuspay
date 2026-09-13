@@ -26,42 +26,39 @@ decision, because the project's value is still that Sagar can defend it.
 | 0.2 Business domain | Done — `docs/business-requirements.md` |
 | 0.3 Transaction lifecycle | Done — `docs/transaction-lifecycle.md` |
 | 0.4 Data contract | Done — `docs/data-contracts.md` |
-| 1.1 Domain + database design | **Written, NOT verified** — see below |
+| 1.1 Domain + database design | Done, verified against PostgreSQL 16.15 |
 
 ### Verified, versus merely written
 
-**Verified earlier (2026-09-13, while Docker still existed):**
-- `cd payment-core && ./mvnw verify` → BUILD SUCCESS against a real
-  Testcontainers PostgreSQL 16.
-- `cd data-hub && .venv\Scripts\python.exe -m pytest -q` → 1 passed, real
-  local `SparkSession`.
+**Verified 2026-09-13, after Docker was reinstalled:**
+- `cd payment-core && ./mvnw verify` → BUILD SUCCESS. All five migrations apply
+  to a real Testcontainers PostgreSQL 16.15, and **22 tests pass** — 1 context
+  load plus 21 schema-constraint tests. Confirmed against the surefire XML, not
+  just the console summary, because `@Nested` grouping made the console output
+  misattribute the two top-level tests.
+- `cd data-hub && .venv\Scripts\python.exe -m pytest -q` → 1 passed, real local
+  `SparkSession`.
 
-**NOT verified — this is the important bit:**
-- **The Phase 1.1 migrations have never touched a database.** `V1`–`V5` compile
-  in the sense that Java compiles around them, but no PostgreSQL has ever parsed
-  that SQL. Syntax errors, wrong constraint names, and the behaviour of the
-  deferred balance trigger are all unproven.
-- `SchemaConstraintsTest` has never run. It compiles; that is all that is known.
-- **CI has never run.** There is still no GitHub remote.
+**Still NOT verified:**
+- **CI has never run.** There is still no GitHub remote. Everything green above
+  is green on one machine only.
 
-### Blocker: Docker is gone
+### Docker was reinstalled — note the new path
 
-Docker Desktop was **uninstalled** on 2026-09-13 at ~16:23 — no registry entry,
-no service, data directories removed, only `C:\Program Files\Docker\Docker\tmp-delete`
-remains. It was not removed by Claude's cleanup (a folder delete would leave the
-service and registry entry behind; only the real uninstaller removes those).
+Docker Desktop was uninstalled mid-session on 2026-09-13 and reinstalled the
+same day. **It now installs per-user**, at
+`C:\Users\sagar\AppData\Local\Programs\DockerDesktop\`, not
+`C:\Program Files\Docker\Docker\`. Scripts hardcoding the old path will fail.
 
-There is also no local PostgreSQL, no Podman and nothing listening on 5432.
+Windows 11 **Home** offers no Hyper-V, so Docker Desktop must use the WSL2
+backend. WSL 2.3.26 is installed with `VirtualMachinePlatform` enabled and **no
+Linux distribution**, which is correct — Docker manages its own internal distro
+and never needs a user distro.
 
-**Consequence:** the entire test strategy depends on Testcontainers, so
-`./mvnw verify` cannot pass on this machine until a container runtime returns.
-`CLAUDE.md` forbids H2, and rightly — the migrations use PostgreSQL domains,
-`plpgsql` triggers and deferred constraint triggers that H2 cannot represent.
-Substituting H2 would mean testing a different database from the one we ship.
-
-**Options:** reinstall Docker Desktop; install Podman (Testcontainers supports
-it); or install PostgreSQL 16 natively and point the tests at it. Sagar's call —
-he was freeing disk space, and Docker Desktop is a few GB.
+A shell started before the install will not have `docker` on `PATH`; refresh it
+with `[System.Environment]::GetEnvironmentVariable("Path","Machine")` or start a
+new shell. Testcontainers itself connects over the named pipe
+`\\.\pipe\docker_engine` and does not need the CLI on `PATH`.
 
 ---
 
@@ -86,7 +83,7 @@ payment-core/
     V5__audit.sql               audit_event + append-only trigger
   src/test/java/com/nexuspay/
     NexusPayApplicationTests    context loads, migrations apply
-    SchemaConstraintsTest       proves constraints reject bad data (UNRUN)
+    SchemaConstraintsTest       21 tests proving constraints reject bad data
     support/PostgresTestcontainer  shared container, one context for the suite
 data-hub/                       Python 3.12, PySpark 4.2, Delta 4.4 — skeleton only
 infra/docker-compose.yml        PostgreSQL only
@@ -135,7 +132,8 @@ infra/docker-compose.yml        PostgreSQL only
 ## Environment (Sagar's machine)
 
 - Project on `E:\NexusPay`. Java 21.0.10, Maven 3.9.9, system Python 3.14.7.
-  **No Docker, no `winget`, no `py` launcher, no `gh` CLI.**
+  Docker Desktop 29.7.2 (per-user install, see above). **No `winget`, no `py`
+  launcher, no `gh` CLI.**
 - **MSI installers fail** — python.org's 3.12 installer dies with error 2203 /
   `0x80070003`. Use `uv` instead: `C:\Users\sagar\.local\bin\uv.exe`. Python
   3.12.14 lives at
@@ -146,15 +144,12 @@ infra/docker-compose.yml        PostgreSQL only
 
 ## What's next
 
-1. **Unblock the container runtime** — nothing in Phase 1 can be proven without it.
-2. **Run `./mvnw verify`** and fix whatever the migrations get wrong on first
-   contact with a real PostgreSQL. Assume there will be something.
-3. **Phase 1.2** — Spring layering: domain packages, DTOs, bean validation,
+1. **Phase 1.2** — Spring layering: domain packages, DTOs, bean validation,
    global exception handler, `/api/v1`, with domain classes free of Spring web imports.
-4. **Phase 1.3** — customer/account/card/merchant CRUD, card lifecycle.
-5. **Phase 1.4** — payment API and the state machine from `transaction-lifecycle.md`.
-6. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
-7. **Any time:** create a GitHub remote so CI actually runs.
+2. **Phase 1.3** — customer/account/card/merchant CRUD, card lifecycle.
+3. **Phase 1.4** — payment API and the state machine from `transaction-lifecycle.md`.
+4. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
+5. **Any time:** create a GitHub remote so CI actually runs.
 
 ---
 
@@ -162,7 +157,7 @@ infra/docker-compose.yml        PostgreSQL only
 
 1. Start Claude in `E:\NexusPay`; it reads `CLAUDE.md` automatically.
 2. Say: *"Read docs/STATUS.md, then continue."*
-3. Restore a container runtime first if you want anything verified.
+3. Start Docker Desktop before anything Testcontainers-based.
 
 ```
 cd payment-core && ./mvnw verify

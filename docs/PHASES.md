@@ -59,7 +59,7 @@ with a synthetic generator.
 - **Learn:** normalization for financial data, constraints as safety nets, why
   `DECIMAL` + currency code.
 - [x] ER diagram — `docs/er-diagram.md`
-- [x] Flyway migrations (V1-V5) — **written, not yet run against a database** for Customer, Account, Card, Merchant, Terminal, Payment,
+- [x] Flyway migrations (V1-V5) — verified against PostgreSQL 16 for Customer, Account, Card, Merchant, Terminal, Payment,
   Authorization, Capture, Refund, Reversal, LedgerAccount, Journal, LedgerEntry,
   AuditEvent *(S; Claude may scaffold empty migration files)*
 - **Done when:** DB constraints reject negative amounts, missing currency and invalid states.
