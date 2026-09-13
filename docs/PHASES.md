@@ -58,8 +58,8 @@ with a synthetic generator.
 ### 1.1 Domain + database design
 - **Learn:** normalization for financial data, constraints as safety nets, why
   `DECIMAL` + currency code.
-- [ ] ER diagram *(S)*
-- [ ] Flyway migrations for Customer, Account, Card, Merchant, Terminal, Payment,
+- [x] ER diagram — `docs/er-diagram.md`
+- [x] Flyway migrations (V1-V5) — **written, not yet run against a database** for Customer, Account, Card, Merchant, Terminal, Payment,
   Authorization, Capture, Refund, Reversal, LedgerAccount, Journal, LedgerEntry,
   AuditEvent *(S; Claude may scaffold empty migration files)*
 - **Done when:** DB constraints reject negative amounts, missing currency and invalid states.
