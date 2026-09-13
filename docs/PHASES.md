@@ -17,12 +17,15 @@ with a synthetic generator.
 ## Phase 0 — Foundations (original steps 1–2)
 
 ### 0.1 Repository and tooling
-- [ ] Monorepo created with the layout in `CLAUDE.md` *(C)*
-- [ ] `payment-core` Spring Boot skeleton with Maven wrapper *(C)*
-- [ ] `data-hub` Python project with PySpark, Delta Lake and pytest *(C)*
-- [ ] `infra/docker-compose.yml` with PostgreSQL *(C)*
-- [ ] GitHub Actions: build + test for both parts *(C)*
+- [x] Monorepo created with the layout in `CLAUDE.md` *(C)*
+- [x] `payment-core` Spring Boot skeleton with Maven wrapper *(C)*
+- [x] `data-hub` Python project with PySpark, Delta Lake and pytest *(C)*
+- [x] `infra/docker-compose.yml` with PostgreSQL *(C)*
+- [x] GitHub Actions: build + test for both parts *(C)*
 - **Done when:** both `./mvnw verify` and `pytest` pass in CI on an empty project.
+  - Both pass **locally** (2026-09-13): `./mvnw verify` green against a real
+    Testcontainers Postgres; `pytest` green on a local SparkSession.
+    Not yet proven *in CI* — no GitHub remote is configured yet.
 
 ### 0.2 Business domain
 - **Learn:** four-party card model (cardholder, merchant, acquirer, issuer) and the
