@@ -174,8 +174,20 @@ class TestQuarantine:
         _, results = run_pipeline(spark, lakehouse, datasets=ALL_DATASETS)
 
         for dataset, result in results.items():
-            assert result.rows_quarantined == 0, (
-                f"{dataset} quarantined rows from a clean batch — a rule is too strict")
+            if result.rows_quarantined == 0:
+                continue
+
+            # Name the offending rule and show a row. "A rule is too strict" is
+            # useless when the failure only reproduces on another platform.
+            rows = read_quarantine(spark, lakehouse["quarantine"], dataset)
+            reasons = {r[QUARANTINE_REASON]: r["count"]
+                       for r in rows.groupBy(QUARANTINE_REASON).count().collect()}
+            sample = rows.limit(1).collect()[0].asDict()
+
+            populated = {k: v for k, v in sample.items() if v not in (None, "")}
+            raise AssertionError(
+                f"{dataset} quarantined {result.rows_quarantined} rows from a clean batch. "
+                f"reasons={reasons} sample={populated}")
 
     def test_quarantined_rows_keep_their_lineage(self, spark, lakehouse):
         written, _ = run_pipeline(spark, lakehouse, Faults(negative_amounts=1))
