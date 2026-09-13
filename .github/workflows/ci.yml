@@ -38,4 +38,16 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
       - name: Run tests
-        run: pytest -q
+        run: |
+          set -o pipefail
+          pytest -q --tb=short 2>&1 | tee /tmp/pytest.txt
+      # Job logs need repository admin rights to read through the API, so a
+      # failure is otherwise just "exit code 1" to anyone without them.
+      # GitHub turns ::error:: lines into check annotations, which the public
+      # checks API does serve — so the reason travels with the failure.
+      - name: Surface failures as annotations
+        if: failure()
+        run: |
+          awk '/^FAILED|^ERROR|^E {2}|short test summary/' /tmp/pytest.txt \
+            | head -30 \
+            | while IFS= read -r line; do echo "::error::${line}"; done
