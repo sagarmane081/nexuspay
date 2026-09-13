@@ -215,7 +215,7 @@ than `clearing`; that is the point.**
 | 1 | `settlement_id` | uuid | no | |
 | 2 | `batch_id` | string | no | |
 | 3 | `participant_id` | uuid | no | An acquirer or an issuer |
-| 4 | `participant_type` | enum | no | `ACQUIRER` \| `ISSUER` |
+| 4 | `participant_type` | enum | no | `ACQUIRER` \| `ISSUER` \| `NETWORK` |
 | 5 | `business_date` | date | no | Asia/Tokyo |
 | 6 | `gross_debits` | decimal | no | Total owed by this participant |
 | 7 | `gross_credits` | decimal | no | Total owed to this participant |
@@ -232,6 +232,14 @@ than `clearing`; that is the point.**
 - **Σ(`net_amount`) across all participants for one business date = 0.** Money is
   conserved: every yen one participant pays, another receives. A non-zero sum
   means money was created or lost, and the pipeline must fail loudly.
+
+  This only holds because **NexusPay itself settles as a `NETWORK` participant**.
+  For one ¥5,000 purchase the issuer pays ¥4,900 (gross less the ¥100
+  interchange it keeps), the acquirer receives ¥4,885, and the ¥15 scheme fee is
+  NexusPay's. Without the network on the file the column sums to +15 rather than
+  0 — the fee would look like money vanishing. *(Corrected 2026-09-13, during
+  Phase 2.1: the original enum listed only ACQUIRER and ISSUER, which made the
+  stated invariant arithmetically unsatisfiable.)*
 - `status = EXECUTED` ⟹ `executed_at` is present.
 - One row per `(participant_id, business_date)` — a second is a duplicate
   settlement and the most dangerous bug in the system.

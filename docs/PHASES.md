@@ -102,10 +102,10 @@ with a synthetic generator.
 
 ### 2.1 Synthetic data generator
 - **Learn:** why realistic test data matters; seeded randomness for reproducible tests.
-- [ ] Python generator that writes payments, ledger entries, clearing and settlement
-  files exactly per `docs/data-contracts.md` *(S)*
-- [ ] Options to inject problems: duplicates, negative amounts, unknown currency,
-  late files, corrupt rows, missing settlement lines *(S)*
+- [x] Python generator that writes payments, ledger entries, clearing and settlement
+  files exactly per `docs/data-contracts.md`
+- [x] Options to inject problems: duplicates, negative amounts, unknown currency,
+  late files, corrupt rows, missing settlement lines — 9 faults, all tested
 - **Done when:** the same seed produces the same files every time.
 
 ### 2.2 Lakehouse basics + Bronze

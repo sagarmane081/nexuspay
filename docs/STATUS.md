@@ -33,6 +33,7 @@ decision, because the project's value is still that Sagar can defend it.
 | 1.5 Idempotency | Done — 120 tests green |
 | 1.6 Double-entry ledger | Done — 140 tests green |
 | **Phase 1 complete** | payment-core invariants hold under Testcontainers |
+| 2.1 Synthetic data generator | Done — 40 data-hub tests green |
 
 ### Verified, versus merely written
 
@@ -172,6 +173,13 @@ infra/docker-compose.yml        PostgreSQL only
   calculation, so at capture the interchange is not yet known. Phase 4.2 posts a
   second journal taking the positions down to the figures in
   `business-requirements.md` §7.
+- **The settlement file needed a `NETWORK` participant.** `data-contracts.md`
+  asserted Σ`net_amount` = 0, but with only ACQUIRER and ISSUER that is
+  arithmetically impossible — the issuer pays ¥4,900, the acquirer receives
+  ¥4,885, and the ¥15 scheme fee belongs to NexusPay. Corrected during Phase 2.1.
+- **The generator never reads the wall clock.** Every timestamp derives from
+  `business_date`, and every identifier from the seeded RNG. Verified by
+  injecting `time.time()` and confirming both determinism tests fail.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.
