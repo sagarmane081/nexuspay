@@ -115,7 +115,7 @@ class SchemaConstraintsTest {
         @DisplayName("a malformed currency code is rejected")
         void malformedCurrencyRejected() {
             assertThatThrownBy(() -> insertPayment(new BigDecimal("5000"), "jpy", "RECEIVED"))
-                    .hasMessageContaining("currency_code_check");
+                    .hasMessageContaining("payment_currency_iso");
         }
 
         @Test

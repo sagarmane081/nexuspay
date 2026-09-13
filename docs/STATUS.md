@@ -28,6 +28,7 @@ decision, because the project's value is still that Sagar can defend it.
 | 0.4 Data contract | Done — `docs/data-contracts.md` |
 | 1.1 Domain + database design | Done, verified against PostgreSQL 16.15 |
 | 1.2 Spring Boot foundation | Done — 46 tests green |
+| 1.3 Customer, account, card, merchant | Done — 79 tests green |
 
 ### Verified, versus merely written
 
@@ -122,6 +123,16 @@ infra/docker-compose.yml        PostgreSQL only
 - **Journal balance is a DEFERRABLE INITIALLY DEFERRED constraint trigger**, so
   it checks at COMMIT. Per-statement checking would reject every valid journal,
   since entries are inserted one row at a time.
+- **No PostgreSQL DOMAINs.** `money_amount` / `currency_code` were removed in
+  Phase 1.3: a domain surfaces over JDBC as `Types#DISTINCT`, which Hibernate's
+  `ddl-auto: validate` cannot reconcile with `BigDecimal` or `String`. Keeping
+  schema validation is worth more than the type alias, and the real guarantees
+  were always the CHECK constraints, which are preserved per column.
+- **Columns are VARCHAR, not CHAR.** CHAR pads with spaces, so `'JP'` silently
+  becomes `'JP '`; it also mismatches Hibernate's expectation for a String.
+- **Card tokens are deterministic** (HMAC of the PAN). The UNIQUE index on
+  `card_token` therefore rejects registering the same card twice — and tests
+  must each use a distinct test PAN.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.
@@ -157,10 +168,9 @@ infra/docker-compose.yml        PostgreSQL only
 
 ## What's next
 
-1. **Phase 1.3** — customer/account/card/merchant CRUD, card lifecycle.
-2. **Phase 1.4** — payment API and the state machine from `transaction-lifecycle.md`.
-3. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
-4. **Any time:** create a GitHub remote so CI actually runs.
+1. **Phase 1.4** — payment API and the state machine from `transaction-lifecycle.md`.
+2. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
+3. **Any time:** create a GitHub remote so CI actually runs.
 
 ---
 

@@ -77,6 +77,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * A safety net for argument validation that escapes the bean-validation
+     * layer — a {@code Money} built with a scale its currency cannot represent,
+     * for instance. Logged at warn: each occurrence is either a client error
+     * that deserves a named domain exception, or a bug worth seeing.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("rejected request [correlationId={}]: {}",
+                CorrelationIdFilter.current(), ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, ex.getMessage());
+    }
+
+    /**
      * Anything unhandled is a fault, not a business outcome. The client gets a
      * correlation ID and nothing else — stack traces and exception messages can
      * leak internals, and in this domain that could mean card data.

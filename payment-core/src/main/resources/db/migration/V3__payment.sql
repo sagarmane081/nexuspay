@@ -13,14 +13,14 @@ CREATE TABLE payment (
     terminal_id        UUID          NULL     REFERENCES terminal (terminal_id),
     card_id            UUID          NOT NULL REFERENCES card (card_id),
 
-    amount             money_amount  NOT NULL,
-    currency           currency_code NOT NULL,
-    authorized_amount  money_amount  NULL,
-    captured_amount    money_amount  NULL,
-    refunded_amount    money_amount  NOT NULL DEFAULT 0,
+    amount             NUMERIC(18,4) NOT NULL,
+    currency           VARCHAR(3)  NOT NULL,
+    authorized_amount  NUMERIC(18,4) NULL,
+    captured_amount    NUMERIC(18,4) NULL,
+    refunded_amount    NUMERIC(18,4) NOT NULL DEFAULT 0,
 
     status             VARCHAR(20)   NOT NULL,
-    mcc                CHAR(4)       NOT NULL,
+    mcc                VARCHAR(4)       NOT NULL,
     auth_code          VARCHAR(6)    NULL,
     risk_decision      VARCHAR(10)   NULL,
     risk_score         SMALLINT      NULL,
@@ -106,8 +106,8 @@ CREATE TABLE payment_authorization (
     -- One authorization per payment in v1. See business-requirements.md:
     -- multiple captures and incremental authorizations are out of scope.
     payment_id            UUID          NOT NULL UNIQUE REFERENCES payment (payment_id),
-    amount                money_amount  NOT NULL,
-    currency              currency_code NOT NULL,
+    amount                NUMERIC(18,4) NOT NULL,
+    currency              VARCHAR(3)  NOT NULL,
     approved              BOOLEAN       NOT NULL,
     auth_code             VARCHAR(6)    NULL,
     issuer_response_code  VARCHAR(4)    NOT NULL,
@@ -137,8 +137,8 @@ CREATE TABLE capture (
     -- application's idempotency check is bypassed or racing.
     authorization_id  UUID          NOT NULL UNIQUE REFERENCES payment_authorization (authorization_id),
     payment_id        UUID          NOT NULL REFERENCES payment (payment_id),
-    amount            money_amount  NOT NULL,
-    currency          currency_code NOT NULL,
+    amount            NUMERIC(18,4) NOT NULL,
+    currency          VARCHAR(3)  NOT NULL,
     captured_at       TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
     CONSTRAINT capture_amount_positive
@@ -153,8 +153,8 @@ CREATE INDEX capture_payment_idx ON capture (payment_id);
 CREATE TABLE refund (
     refund_id    UUID          PRIMARY KEY,
     payment_id   UUID          NOT NULL REFERENCES payment (payment_id),
-    amount       money_amount  NOT NULL,
-    currency     currency_code NOT NULL,
+    amount       NUMERIC(18,4) NOT NULL,
+    currency     VARCHAR(3)  NOT NULL,
     reason       VARCHAR(200)  NOT NULL,
     created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
@@ -172,8 +172,8 @@ CREATE TABLE reversal (
     -- At most one reversal per payment: a payment is either cancelled or not.
     payment_id        UUID          NOT NULL UNIQUE REFERENCES payment (payment_id),
     authorization_id  UUID          NOT NULL REFERENCES payment_authorization (authorization_id),
-    amount            money_amount  NOT NULL,
-    currency          currency_code NOT NULL,
+    amount            NUMERIC(18,4) NOT NULL,
+    currency          VARCHAR(3)  NOT NULL,
     reason            VARCHAR(200)  NOT NULL,
     created_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
@@ -182,3 +182,10 @@ CREATE TABLE reversal (
     CONSTRAINT reversal_amount_minor_units
         CHECK (valid_minor_units(amount, currency))
 );
+
+-- ISO 4217 shape, enforced per column now that the currency_code domain is gone.
+ALTER TABLE payment ADD CONSTRAINT payment_currency_iso CHECK (currency ~ '^[A-Z]{3}$');
+ALTER TABLE payment_authorization ADD CONSTRAINT authorization_currency_iso CHECK (currency ~ '^[A-Z]{3}$');
+ALTER TABLE capture ADD CONSTRAINT capture_currency_iso CHECK (currency ~ '^[A-Z]{3}$');
+ALTER TABLE refund ADD CONSTRAINT refund_currency_iso CHECK (currency ~ '^[A-Z]{3}$');
+ALTER TABLE reversal ADD CONSTRAINT reversal_currency_iso CHECK (currency ~ '^[A-Z]{3}$');

@@ -12,7 +12,7 @@ CREATE TABLE ledger_account (
     ledger_account_id  UUID          PRIMARY KEY,
     account_code       VARCHAR(50)   NOT NULL UNIQUE,
     account_type       VARCHAR(20)   NOT NULL,
-    currency           currency_code NOT NULL,
+    currency           VARCHAR(3)  NOT NULL,
     description        VARCHAR(200)  NOT NULL,
     created_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
@@ -47,8 +47,8 @@ CREATE TABLE ledger_entry (
     -- Always strictly positive. The sign lives in `direction`, never in the
     -- amount. Allowing negative amounts would give two ways to express the same
     -- movement, and sums would silently depend on which one was used.
-    amount             money_amount  NOT NULL,
-    currency           currency_code NOT NULL,
+    amount             NUMERIC(18,4) NOT NULL,
+    currency           VARCHAR(3)  NOT NULL,
     posted_at          TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
     CONSTRAINT ledger_entry_direction_valid
@@ -133,3 +133,7 @@ INSERT INTO ledger_account (ledger_account_id, account_code, account_type, curre
     ('01890000-0000-7000-8000-000000000003', 'SCHEME_FEE_REVENUE',  'REVENUE',   'JPY', 'NexusPay fee income'),
     ('01890000-0000-7000-8000-000000000004', 'SETTLEMENT_CLEARING', 'ASSET',     'JPY', 'Cash in flight during settlement'),
     ('01890000-0000-7000-8000-000000000005', 'INTERCHANGE_PAYABLE', 'LIABILITY', 'JPY', 'Interchange owed onward to an issuer');
+
+-- ISO 4217 shape, enforced per column now that the currency_code domain is gone.
+ALTER TABLE ledger_account ADD CONSTRAINT ledger_account_currency_iso CHECK (currency ~ '^[A-Z]{3}$');
+ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_currency_iso CHECK (currency ~ '^[A-Z]{3}$');

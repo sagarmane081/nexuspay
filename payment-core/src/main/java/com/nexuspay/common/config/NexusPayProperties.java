@@ -18,7 +18,8 @@ public record NexusPayProperties(
         Clearing clearing,
         Authorization authorization,
         Fees fees,
-        Risk risk) {
+        Risk risk,
+        Tokenization tokenization) {
 
     /** Clearing cut-off, evaluated in Asia/Tokyo. */
     public record Clearing(LocalTime cutOff) {
@@ -56,6 +57,20 @@ public record NexusPayProperties(
             if (rate == null || rate.signum() < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
                 throw new IllegalArgumentException(
                         "%s must be a fraction between 0 and 1, but was %s".formatted(name, rate));
+            }
+        }
+    }
+
+    /**
+     * Key used to derive card tokens. Must come from the environment in any
+     * real deployment — the default exists so tests and local runs work, and
+     * changing it invalidates every token already stored.
+     */
+    public record Tokenization(String secret) {
+
+        public Tokenization {
+            if (secret == null || secret.isBlank()) {
+                throw new IllegalArgumentException("nexuspay.tokenization.secret must not be blank");
             }
         }
     }

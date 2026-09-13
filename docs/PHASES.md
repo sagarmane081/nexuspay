@@ -70,8 +70,8 @@ with a synthetic generator.
 - **Done when:** a domain class has zero Spring web imports.
 
 ### 1.3 Customer, account, card, merchant (keep it slim)
-- [ ] Create/read APIs, card lifecycle `ACTIVE/BLOCKED/EXPIRED/CANCELLED` *(S)*
-- [ ] Merchant + terminal management *(S)*
+- [x] Create/read APIs, card lifecycle `ACTIVE/BLOCKED/EXPIRED/CANCELLED`
+- [x] Merchant + terminal management
 - **Tests:** blocked/expired card cannot pay.
 - **Done when:** enough exists to make a payment. Don't gold-plate this step.
 

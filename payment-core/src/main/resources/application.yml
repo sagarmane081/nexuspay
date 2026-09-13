@@ -39,6 +39,10 @@ nexuspay:
     merchant-discount-rate: 0.0330
     interchange-rate: 0.0200
     scheme-fee-rate: 0.0030
+  tokenization:
+    # Override in any real deployment. Changing this invalidates every card
+    # token already stored, because tokens are derived from it.
+    secret: ${NEXUSPAY_TOKENIZATION_SECRET:local-development-only-not-a-real-secret}
   risk:
     single-transaction-ceiling: 1000000
     velocity-count-per-hour: 10

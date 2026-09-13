@@ -26,11 +26,11 @@ CREATE TABLE account (
     account_id    UUID          PRIMARY KEY,
     customer_id   UUID          NOT NULL REFERENCES customer (customer_id),
     account_type  VARCHAR(20)   NOT NULL,
-    currency      currency_code NOT NULL,
+    currency      VARCHAR(3)  NOT NULL,
     -- The settled balance only. "Available" is derived at read time as
     -- balance minus active authorization holds — see business-requirements.md
     -- section 4. Storing it would create a second source of truth that drifts.
-    balance       money_amount  NOT NULL DEFAULT 0,
+    balance       NUMERIC(18,4) NOT NULL DEFAULT 0,
     status        VARCHAR(20)   NOT NULL,
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
@@ -82,9 +82,9 @@ CREATE INDEX card_account_idx ON card (account_id);
 CREATE TABLE merchant (
     merchant_id          UUID          PRIMARY KEY,
     legal_name           VARCHAR(200)  NOT NULL,
-    mcc                  CHAR(4)       NOT NULL,
-    country              CHAR(2)       NOT NULL,
-    settlement_currency  currency_code NOT NULL,
+    mcc                  VARCHAR(4)       NOT NULL,
+    country              VARCHAR(2)       NOT NULL,
+    settlement_currency  VARCHAR(3)  NOT NULL,
     status               VARCHAR(20)   NOT NULL,
     created_at           TIMESTAMPTZ   NOT NULL DEFAULT now(),
     updated_at           TIMESTAMPTZ   NOT NULL DEFAULT now(),
@@ -111,3 +111,7 @@ CREATE TABLE terminal (
 );
 
 CREATE UNIQUE INDEX terminal_ref_unique ON terminal (merchant_id, terminal_ref);
+
+-- ISO 4217 shape, enforced per column now that the currency_code domain is gone.
+ALTER TABLE account ADD CONSTRAINT account_currency_iso CHECK (currency ~ '^[A-Z]{3}$');
+ALTER TABLE merchant ADD CONSTRAINT merchant_settlement_currency_iso CHECK (settlement_currency ~ '^[A-Z]{3}$');
