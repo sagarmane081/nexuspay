@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import csv
 import io
-import random
 from pathlib import Path
 from typing import Any
 
@@ -94,42 +93,52 @@ def render(dataset: str, rows: list[dict[str, Any]], config: GeneratorConfig) ->
 
 
 def apply_row_faults(batch: GeneratedBatch, config: GeneratorConfig) -> None:
-    """Inject the defects that live in the rows rather than the file text."""
+    """Inject the defects that live in the rows rather than the file text.
+
+    Each fault claims its **own** rows. An earlier version started every fault
+    at row 0, so asking for a negative amount, an unknown currency and an
+    unmasked PAN put all three on the same payment. Silver reports the first
+    matching rule per row, so two of the three became invisible and the fault
+    counts could not be asserted independently — a generator that cannot
+    produce one defect at a time is not much use for testing the handling of
+    one defect at a time.
+    """
     faults = config.faults
-    rng = random.Random(config.seed + 1)
+    cursor = 0
+
+    def take(count: int) -> list[int]:
+        """Claim the next `count` payment rows, exclusively."""
+        nonlocal cursor
+        indices = list(range(cursor, min(cursor + count, len(batch.payments))))
+        cursor += len(indices)
+        return indices
 
     if faults.duplicate_payments:
-        # The same payment_id twice in one file. Bronze keeps both; Silver must
-        # deduplicate by business key.
-        for index in range(min(faults.duplicate_payments, len(batch.payments))):
+        # Copies of otherwise-clean rows: the same payment_id twice in one file.
+        # Bronze keeps both; Silver must deduplicate by business key.
+        for index in take(faults.duplicate_payments):
             batch.payments.append(dict(batch.payments[index]))
 
-    if faults.negative_amounts:
-        for index in range(min(faults.negative_amounts, len(batch.payments))):
-            row = batch.payments[index]
-            row["amount"] = "-" + row["amount"].lstrip("-")
+    for index in take(faults.negative_amounts):
+        row = batch.payments[index]
+        row["amount"] = "-" + row["amount"].lstrip("-")
 
-    if faults.unknown_currencies:
-        for index in range(min(faults.unknown_currencies, len(batch.payments))):
-            batch.payments[index]["currency"] = "ZZZ"
+    for index in take(faults.unknown_currencies):
+        batch.payments[index]["currency"] = "ZZZ"
 
-    if faults.unmasked_pans:
+    for index in take(faults.unmasked_pans):
         # A full PAN where a masked one belongs: a contract breach and a
-        # security incident, and the pipeline must quarantine it rather than
-        # carry it forward.
-        for index in range(min(faults.unmasked_pans, len(batch.payments))):
-            batch.payments[index]["pan_masked"] = "4111111111111111"
+        # security incident. The pipeline must quarantine it, and must not
+        # carry the number forward into the quarantine table either.
+        batch.payments[index]["pan_masked"] = "4111111111111111"
 
     if faults.unbalanced_journals:
         # Break the credit side of N journals by one unit. Nothing may silently
-        # absorb this: an unbalanced journal must fail the pipeline, never be
+        # absorb this: an unbalanced journal fails the pipeline, it is never
         # quarantined and forgotten.
         credits = [entry for entry in batch.ledger_entries if entry["direction"] == "CREDIT"]
-        for index in range(min(faults.unbalanced_journals, len(credits))):
-            entry = credits[index]
+        for entry in credits[: faults.unbalanced_journals]:
             entry["amount"] = str(int(entry["amount"]) - 1)
-
-    del rng  # reserved for future faults that need randomness
 
 
 def write(batch: GeneratedBatch, config: GeneratorConfig, output_dir: Path) -> dict[str, Path]:

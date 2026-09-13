@@ -21,7 +21,7 @@ with a synthetic generator.
 - [x] `payment-core` Spring Boot skeleton with Maven wrapper *(C)*
 - [x] `data-hub` Python project with PySpark, Delta Lake and pytest *(C)*
 - [x] `infra/docker-compose.yml` with PostgreSQL *(C)*
-- [x] GitHub Actions: build + test for both parts *(C)* — written; **not yet run, no remote**
+- [x] GitHub Actions: build + test for both parts *(C)* — green on GitHub since 2026-09-13
 - **Done when:** both `./mvnw verify` and `pytest` pass in CI on an empty project.
   - Both pass **locally** (2026-09-13): `./mvnw verify` green against a real
     Testcontainers Postgres; `pytest` green on a local SparkSession.
@@ -119,8 +119,8 @@ with a synthetic generator.
 
 ### 2.3 Silver
 - **Learn:** `MERGE` (upsert), deduplication, type casting, conformed data, quarantine tables.
-- [ ] Deduplicate by business key, cast types, mask PAN (first 6 + last 4), route
-  bad rows to a quarantine table with a reason *(S)*
+- [x] Deduplicate by business key, cast types, mask PAN (first 6 + last 4), route
+  bad rows to a quarantine table with a reason — 14 reason codes for payments
 - **Tests:** duplicates removed; every bad row is in quarantine with a reason;
   no raw PAN exists in Silver.
 

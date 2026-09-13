@@ -35,6 +35,7 @@ decision, because the project's value is still that Sagar can defend it.
 | **Phase 1 complete** | payment-core invariants hold under Testcontainers |
 | 2.1 Synthetic data generator | Done — 40 data-hub tests green |
 | 2.2 Lakehouse basics + Bronze | Done — 60 data-hub tests green |
+| 2.3 Silver | Done — 79 data-hub tests green |
 
 ### Verified, versus merely written
 
@@ -50,9 +51,12 @@ decision, because the project's value is still that Sagar can defend it.
   deliberately injecting a Spring import into `Money` and confirming it fails
   with the file and line — an architecture test that cannot fail is decoration.
 
-**Still NOT verified:**
-- **CI has never run.** There is still no GitHub remote. Everything green above
-  is green on one machine only.
+**CI now runs on every push.** Remote is
+`https://github.com/sagarmane081/nexuspay`. The first run found a real bug that
+140 green local tests could not: `mvnw` was committed mode 100644, because Git
+on Windows does not track the executable bit, so the Linux runner refused to
+start the build. The data-hub job passed on Linux first time — Delta JARs
+download on demand and the winutils path is correctly skipped.
 
 ### Docker was reinstalled — note the new path
 
@@ -194,6 +198,21 @@ infra/docker-compose.yml        PostgreSQL only
   would turn a bad row into a null before Silver could quarantine it with a
   reason. The one exception is a file whose name disagrees with its rows, which
   is refused outright.
+- **Silver validates before casting.** Once `"-5000"` is cast it is just a
+  number and `"ZZZ"` is just a null; the evidence of *why* a row is wrong is
+  gone, and a quarantine row reading "it was null" helps nobody.
+- **Quarantine redacts card data.** A row is quarantined as `UNMASKED_PAN`
+  precisely because a full card number arrived — writing it verbatim would
+  relocate the leak to a table with less scrutiny, not contain it.
+- **An unbalanced journal fails the pipeline; it is never quarantined.** Every
+  other defect affects some rows. This one means money was created or
+  destroyed, and quarantining it would let the run report success.
+- **Validation rules are callables, not Columns.** A PySpark `Column` is a
+  handle into a live JVM: building the rule table eagerly made the module
+  unimportable before a session existed, breaking linters and editors.
+- **Generator faults claim disjoint rows.** They all used to start at row 0, so
+  three faults landed on one payment and Silver — which reports the first
+  matching rule per row — made two of them invisible.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.
