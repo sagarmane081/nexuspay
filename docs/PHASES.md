@@ -21,7 +21,7 @@ with a synthetic generator.
 - [x] `payment-core` Spring Boot skeleton with Maven wrapper *(C)*
 - [x] `data-hub` Python project with PySpark, Delta Lake and pytest *(C)*
 - [x] `infra/docker-compose.yml` with PostgreSQL *(C)*
-- [x] GitHub Actions: build + test for both parts *(C)*
+- [x] GitHub Actions: build + test for both parts *(C)* — written; **not yet run, no remote**
 - **Done when:** both `./mvnw verify` and `pytest` pass in CI on an empty project.
   - Both pass **locally** (2026-09-13): `./mvnw verify` green against a real
     Testcontainers Postgres; `pytest` green on a local SparkSession.
@@ -31,21 +31,21 @@ with a synthetic generator.
 - **Learn:** four-party card model (cardholder, merchant, acquirer, issuer) and the
   network in the middle; authorization vs capture; refund vs reversal; clearing vs
   settlement; interchange and fees; why reconciliation exists.
-- [ ] `docs/business-requirements.md` *(S)* — actors, flows, JPY, Asia/Tokyo, cut-off times
+- [x] `docs/business-requirements.md` *(C, per 2026-09-13 agreement)* — actors, flows, JPY, Asia/Tokyo, cut-off times
 - **Done when:** Sagar can explain the life of one ¥5,000 payment from tap to
   merchant bank account without notes.
 - **Talking point:** "I can walk through a card payment from authorization to settlement."
 
 ### 0.3 Transaction lifecycle
 - **Learn:** state machines, allowed vs forbidden transitions, terminal states.
-- [ ] State diagram + transition table *(S)*:
+- [x] State diagram + transition table — see `docs/transaction-lifecycle.md`:
   `RECEIVED → VALIDATED → RISK_CHECK → AUTHORIZED → CAPTURED → CLEARED → SETTLED`,
   plus `DECLINED, REVERSED, EXPIRED, REFUNDED, FAILED`
 - **Done when:** every transition is either allowed (with a reason) or explicitly forbidden.
 
 ### 0.4 Data contract (links both tracks)
 - **Learn:** data contracts, schema versioning, why producers and consumers agree first.
-- [ ] `docs/data-contracts.md` *(S, Claude reviews)* — file formats and columns for
+- [x] `docs/data-contracts.md` *(C, per 2026-09-13 agreement)* — file formats and columns for
   payments, ledger entries, clearing file, settlement file; IDs, amounts, currency,
   timestamps, `source_file`, `batch_id`, `schema_version`
 - **Done when:** the generator (Phase 2) and payment-core exports (Phase 3) can both

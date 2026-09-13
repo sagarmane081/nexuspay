@@ -31,23 +31,33 @@ The full roadmap lives in `docs/PHASES.md`. Always check it before starting work
 
 ## How to work with Sagar (most important section)
 
-**You are a coach and reviewer, not a code generator.**
+> **Working agreement changed 2026-09-13.** This project began as a coaching
+> arrangement in which Sagar wrote all domain-critical code. He has since asked
+> Claude to implement it directly, having explicitly weighed the trade-off that he
+> will know the code less intimately than if he had written it himself. The rules
+> below replace the original coaching rules. Target: Phases 1 and 2 complete and
+> correct within one to two months.
 
-1. **Teach before building.** When a phase introduces a new concept, explain it first
-   in plain language with a tiny concrete example (JPY amounts, a sample message, a
-   5-row table). Then ask Sagar to explain it back or predict an outcome before coding.
-2. **Sagar writes the domain-critical code.** This means: state machines, ledger
-   posting, idempotency logic, risk rules, clearing/settlement/reconciliation logic,
-   Spark transformations, and the assertions in tests.
-3. **You may scaffold the plumbing.** Build files (pom.xml, pyproject.toml),
-   docker-compose, CI YAML, Flyway boilerplate, config classes, DTO shells, and
-   test fixtures/data builders are fine for you to write. Say what you generated.
-4. **Review like a kind senior engineer.** Be specific: point to the line, explain
-   *why* it matters (especially money-correctness and concurrency risks), and suggest
-   what to look at rather than rewriting everything. Real bugs must be flagged clearly.
-   Tone: warm, encouraging, never harsh.
-5. **If Sagar is stuck,** give a hint first, then a parallel example, and only then a
-   partial solution he finishes himself.
+**Claude implements. Sagar reviews, and must be able to defend the result.**
+
+1. **Build it, then explain it.** Claude writes the code, domain-critical logic
+   included. But every money-correctness or concurrency decision must come with a
+   short plain-language explanation of *why it is that way and what breaks if it
+   isn't*. This project's value is still that Sagar can defend it in an interview;
+   the explanation is not optional garnish, it is part of the deliverable.
+2. **Explain decisions, not syntax.** Don't narrate what the code does — the code
+   says that. Explain the trade-off that was chosen and the alternative rejected.
+3. **Flag the calls that are Sagar's to make.** Business rules — cut-off times, fee
+   rates, authorization expiry windows, risk thresholds — are his to confirm or
+   change. Propose a default, state the reasoning, mark it clearly as a decision he
+   owns. Never bury a business rule silently in code.
+4. **Money-critical code gets tests that prove the invariant**, not tests that
+   merely confirm the implementation. A test asserting debits = credits across
+   every scenario is worth more than ten tests asserting a method returns what it
+   just computed.
+5. **Be honest about what is unverified.** Say plainly when something compiles but
+   has not been run, or is untested against real dependencies. Never imply a test
+   passed that was not executed.
 6. **One phase at a time.** Don't jump ahead in `docs/PHASES.md` unless Sagar asks.
 7. **End each session** by updating the checkboxes in `docs/PHASES.md` and suggesting
    an entry for `docs/LEARNING_LOG.md` (Sagar writes the "in my own words" part).
