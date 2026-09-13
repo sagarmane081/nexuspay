@@ -9,6 +9,7 @@ import com.nexuspay.common.error.EntityNotFoundException;
 import com.nexuspay.common.id.UuidV7;
 import com.nexuspay.common.money.Money;
 import com.nexuspay.common.time.BusinessCalendar;
+import com.nexuspay.ledger.application.LedgerService;
 import com.nexuspay.merchant.application.MerchantService;
 import com.nexuspay.merchant.domain.Merchant;
 import com.nexuspay.payment.domain.Capture;
@@ -44,6 +45,7 @@ public class PaymentService {
     private final CardService cards;
     private final MerchantService merchants;
     private final IssuerGateway issuer;
+    private final LedgerService ledger;
     private final BusinessCalendar calendar;
     private final NexusPayProperties properties;
     private final Clock clock;
@@ -56,6 +58,7 @@ public class PaymentService {
                           CardService cards,
                           MerchantService merchants,
                           IssuerGateway issuer,
+                          LedgerService ledger,
                           BusinessCalendar calendar,
                           NexusPayProperties properties,
                           Clock clock) {
@@ -67,6 +70,7 @@ public class PaymentService {
         this.cards = cards;
         this.merchants = merchants;
         this.issuer = issuer;
+        this.ledger = ledger;
         this.calendar = calendar;
         this.properties = properties;
         this.clock = clock;
@@ -145,6 +149,12 @@ public class PaymentService {
 
         payment.capture(captureAmount, now);
         captures.save(Capture.of(authorization.authorizationId(), paymentId, captureAmount, now));
+
+        // Same transaction as the capture itself. If the journal cannot be
+        // written the capture must not stand either, or the payment record and
+        // the ledger would disagree about what happened.
+        ledger.postCapture(payment.correlationId(), paymentId, captureAmount, payment.businessDate());
+
         return payment;
     }
 
@@ -159,7 +169,11 @@ public class PaymentService {
         Payment payment = requireForUpdate(paymentId);
 
         payment.refund(refundAmount);
-        return refunds.save(Refund.of(paymentId, refundAmount, reason, now));
+        Refund refund = refunds.save(Refund.of(paymentId, refundAmount, reason, now));
+
+        ledger.postRefund(payment.correlationId(), paymentId, refundAmount, payment.businessDate());
+
+        return refund;
     }
 
     @Transactional
@@ -170,12 +184,19 @@ public class PaymentService {
         PaymentAuthorization authorization = authorizations.findByPaymentId(paymentId)
                 .orElseThrow(() -> new EntityNotFoundException("PaymentAuthorization", paymentId));
 
-        Money reversedAmount = payment.capturedAmount() != null
-                ? payment.capturedAmount()
-                : payment.authorizedAmount();
+        Money capturedAmount = payment.capturedAmount();
+        Money reversedAmount = capturedAmount != null ? capturedAmount : payment.authorizedAmount();
 
         payment.reverse();
         reversals.save(Reversal.of(paymentId, authorization.authorizationId(), reversedAmount, reason, now));
+
+        // Only a captured payment has anything in the ledger to unwind.
+        // Reversing an authorization releases a hold, and a hold was never
+        // posted — see business-requirements.md section 4.
+        if (capturedAmount != null) {
+            ledger.postReversal(payment.correlationId(), paymentId, capturedAmount, payment.businessDate());
+        }
+
         return payment;
     }
 

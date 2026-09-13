@@ -31,6 +31,8 @@ decision, because the project's value is still that Sagar can defend it.
 | 1.3 Customer, account, card, merchant | Done — 79 tests green |
 | 1.4 Payment processing + state machine | Done — 112 tests green |
 | 1.5 Idempotency | Done — 120 tests green |
+| 1.6 Double-entry ledger | Done — 140 tests green |
+| **Phase 1 complete** | payment-core invariants hold under Testcontainers |
 
 ### Verified, versus merely written
 
@@ -159,6 +161,17 @@ infra/docker-compose.yml        PostgreSQL only
 - **A failed operation releases its key.** The operation is transactional, so
   nothing committed; burning the key would leave the client unable to ever
   complete that request.
+- **An authorization posts no journal.** `PHASES.md` asked for postings on
+  authorize; `business-requirements.md` §4 says a hold moves no value. The
+  documented decision wins — the ledger begins at capture.
+- **The ledger balance is enforced twice, on purpose.** The domain check gives a
+  readable error naming both totals; the deferred trigger is the guarantee.
+  Verified by disabling the domain check and posting a capture off by one yen:
+  PostgreSQL refused the COMMIT, rolling back the capture along with it.
+- **Capture posts gross; clearing will adjust to net.** Fees are a clearing-time
+  calculation, so at capture the interchange is not yet known. Phase 4.2 posts a
+  second journal taking the positions down to the figures in
+  `business-requirements.md` §7.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.
@@ -194,7 +207,8 @@ infra/docker-compose.yml        PostgreSQL only
 
 ## What's next
 
-1. **Phase 1.6** — the double-entry ledger.
+1. **Phase 2** — data hub v1: synthetic generator, Bronze/Silver/Gold, the
+   reconciliation suite. Can run in parallel with Phase 3.
 2. **Any time:** create a GitHub remote so CI actually runs.
 
 ---

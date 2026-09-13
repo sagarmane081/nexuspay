@@ -90,8 +90,8 @@ with a synthetic generator.
 
 ### 1.6 Double-entry ledger
 - **Learn:** journals vs entries, chart of accounts, reversal + correction entries.
-- [ ] Immutable journals and entries; every posting balances *(S)*
-- [ ] Postings for authorize, capture, refund, reverse *(S)*
+- [x] Immutable journals and entries; every posting balances
+- [x] Postings for capture, refund, reverse — **authorize posts nothing**, per the holds decision in `business-requirements.md` §4
 - **Tests:** a parameterized test asserts debits = credits for **every** scenario;
   UPDATE/DELETE on ledger tables is impossible (DB permission or trigger).
 - **Done when:** Phase 1 invariants hold under Testcontainers PostgreSQL in CI.
