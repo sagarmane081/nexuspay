@@ -29,6 +29,7 @@ decision, because the project's value is still that Sagar can defend it.
 | 1.1 Domain + database design | Done, verified against PostgreSQL 16.15 |
 | 1.2 Spring Boot foundation | Done — 46 tests green |
 | 1.3 Customer, account, card, merchant | Done — 79 tests green |
+| 1.4 Payment processing + state machine | Done — 112 tests green |
 
 ### Verified, versus merely written
 
@@ -133,6 +134,15 @@ infra/docker-compose.yml        PostgreSQL only
 - **Card tokens are deterministic** (HMAC of the PAN). The UNIQUE index on
   `card_token` therefore rejects registering the same card twice — and tests
   must each use a distinct test PAN.
+- **Refunds take a row-level write lock** (`PaymentRepository.findByIdForUpdate`).
+  Verified by removing it: two concurrent ¥3,000 refunds against a ¥5,000
+  capture then BOTH succeeded — ¥6,000 returned, money created from nothing.
+  The DB CHECK does not catch it, because each individual write looks valid.
+- **Refund requires SETTLED; reversal requires pre-settlement.** Before cash
+  moves there is nothing to send back, so the hold is released instead.
+- **Clearing and settlement transitions are service methods, not endpoints.**
+  `markCleared` / `markSettled` are batch outcomes that Phase 4 will drive; they
+  exist now only so refunds are reachable and testable.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.
@@ -168,9 +178,8 @@ infra/docker-compose.yml        PostgreSQL only
 
 ## What's next
 
-1. **Phase 1.4** — payment API and the state machine from `transaction-lifecycle.md`.
-2. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
-3. **Any time:** create a GitHub remote so CI actually runs.
+1. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
+2. **Any time:** create a GitHub remote so CI actually runs.
 
 ---
 

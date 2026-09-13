@@ -77,8 +77,8 @@ with a synthetic generator.
 
 ### 1.4 Payment processing + state machine
 - **Learn:** authorization holds, capture windows, partial capture (optional).
-- [ ] `POST /payments`, `GET /payments/{id}`, `POST /payments/{id}/capture|refund|reverse` *(S)*
-- [ ] State machine enforced in the domain *(S)*
+- [x] `POST /payments`, `GET /payments/{id}`, `POST /payments/{id}/capture|refund|reverse`
+- [x] State machine enforced in the domain — all 144 transitions tested against the documented matrix
 - **Tests:** every forbidden transition throws; refund cannot exceed captured amount.
 
 ### 1.5 Idempotency
