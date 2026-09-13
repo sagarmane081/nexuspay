@@ -65,8 +65,8 @@ with a synthetic generator.
 - **Done when:** DB constraints reject negative amounts, missing currency and invalid states.
 
 ### 1.2 Spring Boot foundation
-- [ ] Domain packages, DTOs, bean validation, global exception handler, `/api/v1` *(C scaffolds, S reviews)*
-- [ ] Controller → Application Service → Domain → Repository boundaries *(S)*
+- [x] Domain packages, bean-validation error contract, global exception handler, `/api/v1` — first concrete DTOs land with the first endpoint in 1.3
+- [x] Controller → Application Service → Domain → Repository boundaries — enforced by `LayeringTest`; first vertical slice in 1.3
 - **Done when:** a domain class has zero Spring web imports.
 
 ### 1.3 Customer, account, card, merchant (keep it slim)

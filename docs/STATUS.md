@@ -27,6 +27,7 @@ decision, because the project's value is still that Sagar can defend it.
 | 0.3 Transaction lifecycle | Done — `docs/transaction-lifecycle.md` |
 | 0.4 Data contract | Done — `docs/data-contracts.md` |
 | 1.1 Domain + database design | Done, verified against PostgreSQL 16.15 |
+| 1.2 Spring Boot foundation | Done — 46 tests green |
 
 ### Verified, versus merely written
 
@@ -38,6 +39,9 @@ decision, because the project's value is still that Sagar can defend it.
   misattribute the two top-level tests.
 - `cd data-hub && .venv\Scripts\python.exe -m pytest -q` → 1 passed, real local
   `SparkSession`.
+- Phase 1.2 brings the suite to **46 tests**. `LayeringTest` was verified by
+  deliberately injecting a Spring import into `Money` and confirming it fails
+  with the file and line — an architecture test that cannot fail is decoration.
 
 **Still NOT verified:**
 - **CI has never run.** There is still no GitHub remote. Everything green above
@@ -81,9 +85,18 @@ payment-core/
     V3__payment.sql             payment, payment_authorization, capture, refund, reversal
     V4__ledger.sql              ledger_account, journal, ledger_entry + both triggers
     V5__audit.sql               audit_event + append-only trigger
+  src/main/java/com/nexuspay/common/
+    money/Money.java            currency-safe amounts; rejects JPY minor units
+    time/BusinessCalendar.java  Asia/Tokyo 22:00 cut-off -> business date
+    id/UuidV7.java              time-ordered IDs (RFC 9562)
+    error/                      DomainException + stable ErrorCode, no HTTP types
+    api/                        GlobalExceptionHandler (RFC 9457), CorrelationIdFilter
+    config/                     NexusPayProperties — every [DECISION] value
   src/test/java/com/nexuspay/
     NexusPayApplicationTests    context loads, migrations apply
     SchemaConstraintsTest       21 tests proving constraints reject bad data
+    architecture/LayeringTest   domain packages import no framework types
+    common/                     Money, BusinessCalendar, UuidV7 unit tests
     support/PostgresTestcontainer  shared container, one context for the suite
 data-hub/                       Python 3.12, PySpark 4.2, Delta 4.4 — skeleton only
 infra/docker-compose.yml        PostgreSQL only
@@ -144,12 +157,10 @@ infra/docker-compose.yml        PostgreSQL only
 
 ## What's next
 
-1. **Phase 1.2** — Spring layering: domain packages, DTOs, bean validation,
-   global exception handler, `/api/v1`, with domain classes free of Spring web imports.
-2. **Phase 1.3** — customer/account/card/merchant CRUD, card lifecycle.
-3. **Phase 1.4** — payment API and the state machine from `transaction-lifecycle.md`.
-4. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
-5. **Any time:** create a GitHub remote so CI actually runs.
+1. **Phase 1.3** — customer/account/card/merchant CRUD, card lifecycle.
+2. **Phase 1.4** — payment API and the state machine from `transaction-lifecycle.md`.
+3. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
+4. **Any time:** create a GitHub remote so CI actually runs.
 
 ---
 

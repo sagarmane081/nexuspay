@@ -22,3 +22,28 @@ management:
     web:
       exposure:
         include: health,info
+
+# Business rules marked [DECISION] in docs/business-requirements.md.
+# These are Sagar's to change; nothing here is a technical constraint.
+nexuspay:
+  clearing:
+    # Asia/Tokyo. A capture at 21:50 and one at 22:10 fall on different
+    # business dates and therefore in different settlement batches.
+    cut-off: "22:00"
+  authorization:
+    retail-validity: 7d
+    travel-validity: 30d
+  fees:
+    # Fractions, not percentages. The acquirer's margin is the residual:
+    # merchant-discount-rate minus interchange minus scheme fee.
+    merchant-discount-rate: 0.0330
+    interchange-rate: 0.0200
+    scheme-fee-rate: 0.0030
+  risk:
+    single-transaction-ceiling: 1000000
+    velocity-count-per-hour: 10
+    velocity-value-per-day: 2000000
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{correlationId:-no-correlation-id}] %logger{36} - %msg%n"
