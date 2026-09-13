@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -47,10 +48,17 @@ public class GlobalExceptionHandler {
      * 422 rather than 400: the request was syntactically fine and we understood
      * it perfectly — the business rules simply do not allow it. Refunding more
      * than was captured is not a malformed request.
+     * <p>
+     * The one exception is a concurrent request holding the same
+     * Idempotency-Key, which is a 409: nothing is wrong with the request, it
+     * simply arrived while a sibling was still running, and retrying will work.
      */
     @ExceptionHandler(DomainException.class)
     public ProblemDetail handleDomain(DomainException ex) {
-        return problem(HttpStatus.UNPROCESSABLE_ENTITY, ex.errorCode(), ex.getMessage());
+        HttpStatus status = ex.errorCode() == ErrorCode.IDEMPOTENCY_REQUEST_IN_PROGRESS
+                ? HttpStatus.CONFLICT
+                : HttpStatus.UNPROCESSABLE_ENTITY;
+        return problem(status, ex.errorCode(), ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -66,6 +74,16 @@ public class GlobalExceptionHandler {
                 "the request failed validation");
         problem.setProperty("violations", violations);
         return problem;
+    }
+
+    /**
+     * Idempotency-Key is mandatory on money-moving endpoints. Omitting it is a
+     * client mistake, and must not surface as a 500.
+     */
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ProblemDetail handleMissingHeader(MissingRequestHeaderException ex) {
+        return problem(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED,
+                "required header '%s' is missing".formatted(ex.getHeaderName()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

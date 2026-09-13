@@ -27,6 +27,7 @@ public enum ErrorCode {
 
     // Idempotency (Phase 1.5)
     IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_BODY,
+    IDEMPOTENCY_REQUEST_IN_PROGRESS,
 
     // Catch-all
     INTERNAL_ERROR

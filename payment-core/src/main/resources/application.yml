@@ -43,6 +43,8 @@ nexuspay:
     # Override in any real deployment. Changing this invalidates every card
     # token already stored, because tokens are derived from it.
     secret: ${NEXUSPAY_TOKENIZATION_SECRET:local-development-only-not-a-real-secret}
+  idempotency:
+    retention: 24h
   risk:
     single-transaction-ceiling: 1000000
     velocity-count-per-hour: 10

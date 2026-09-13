@@ -72,6 +72,7 @@ class PaymentFlowTest {
                 .andExpect(jsonPath("$.businessDate").isNotEmpty());
 
         mvc.perform(post("/payments/{id}/capture", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CAPTURED"))
@@ -85,6 +86,7 @@ class PaymentFlowTest {
         UUID paymentId = createPayment(fixture, 30000);
 
         mvc.perform(post("/payments/{id}/capture", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"amount\":18000}"))
                 .andExpect(status().isOk())
@@ -100,6 +102,7 @@ class PaymentFlowTest {
         UUID paymentId = createPayment(fixture, 5000);
 
         mvc.perform(post("/payments/{id}/capture", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"amount\":6000}"))
                 .andExpect(status().isUnprocessableEntity())
@@ -128,6 +131,7 @@ class PaymentFlowTest {
         UUID paymentId = createPayment(fixture, 5000);
 
         mvc.perform(post("/payments/{id}/reverse", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reason\":\"terminal timed out\"}"))
                 .andExpect(status().isOk())
@@ -141,6 +145,7 @@ class PaymentFlowTest {
         UUID paymentId = settledPayment(fixture, 5000, 5000);
 
         mvc.perform(post("/payments/{id}/reverse", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reason\":\"customer complained\"}"))
                 .andExpect(status().isUnprocessableEntity())
@@ -156,6 +161,7 @@ class PaymentFlowTest {
         UUID paymentId = settledPayment(fixture, 5000, 5000);
 
         mvc.perform(post("/payments/{id}/refund", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"amount\":2000,\"reason\":\"partial return\"}"))
                 .andExpect(status().isOk())
@@ -167,6 +173,7 @@ class PaymentFlowTest {
 
         // 2000 already returned, so 3001 more would exceed the 5000 capture.
         mvc.perform(post("/payments/{id}/refund", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"amount\":3001,\"reason\":\"too much\"}"))
                 .andExpect(status().isUnprocessableEntity())
@@ -174,6 +181,7 @@ class PaymentFlowTest {
 
         // Exactly the remainder is fine, and completes the refund.
         mvc.perform(post("/payments/{id}/refund", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"amount\":3000,\"reason\":\"rest of it\"}"))
                 .andExpect(status().isOk());
@@ -234,11 +242,13 @@ class PaymentFlowTest {
         UUID paymentId = createPayment(fixture, 5000);
 
         mvc.perform(post("/payments/{id}/reverse", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reason\":\"changed mind\"}"))
                 .andExpect(status().isOk());
 
         mvc.perform(post("/payments/{id}/capture", paymentId)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.errorCode").value("INVALID_STATE_TRANSITION"));
@@ -252,6 +262,7 @@ class PaymentFlowTest {
 
         MvcResult result = mvc.perform(post("/payments")
                         .header("X-Correlation-Id", supplied)
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"cardId":"%s","merchantId":"%s","terminalId":"%s",
@@ -310,6 +321,11 @@ class PaymentFlowTest {
 
     private static final AtomicInteger PAN_SEQUENCE = new AtomicInteger(1);
 
+    /** A fresh key per call: these tests exercise the payment flow, not replay. */
+    private static String newKey() {
+        return "key-" + UUID.randomUUID();
+    }
+
     private static String uniqueTestPan() {
         // 411111 prefix keeps it an obvious Visa test number; the tail varies.
         return "411111" + String.format("%010d", PAN_SEQUENCE.getAndIncrement());
@@ -317,6 +333,7 @@ class PaymentFlowTest {
 
     private UUID createPayment(Fixture fixture, long yen) throws Exception {
         return idFrom(mvc.perform(post("/payments")
+                        .header("Idempotency-Key", newKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"cardId":"%s","merchantId":"%s","terminalId":"%s",

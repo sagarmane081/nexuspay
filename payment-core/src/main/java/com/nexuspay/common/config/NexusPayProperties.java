@@ -19,7 +19,8 @@ public record NexusPayProperties(
         Authorization authorization,
         Fees fees,
         Risk risk,
-        Tokenization tokenization) {
+        Tokenization tokenization,
+        Idempotency idempotency) {
 
     /** Clearing cut-off, evaluated in Asia/Tokyo. */
     public record Clearing(LocalTime cutOff) {
@@ -73,6 +74,14 @@ public record NexusPayProperties(
                 throw new IllegalArgumentException("nexuspay.tokenization.secret must not be blank");
             }
         }
+    }
+
+    /**
+     * How long an Idempotency-Key is honoured. After this a retry counts as a
+     * new request — the lesser evil, since holding keys forever grows the table
+     * without bound.
+     */
+    public record Idempotency(java.time.Duration retention) {
     }
 
     /** Risk thresholds. Detail in Phase 3.1. */

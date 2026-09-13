@@ -30,6 +30,7 @@ decision, because the project's value is still that Sagar can defend it.
 | 1.2 Spring Boot foundation | Done — 46 tests green |
 | 1.3 Customer, account, card, merchant | Done — 79 tests green |
 | 1.4 Payment processing + state machine | Done — 112 tests green |
+| 1.5 Idempotency | Done — 120 tests green |
 
 ### Verified, versus merely written
 
@@ -143,6 +144,21 @@ infra/docker-compose.yml        PostgreSQL only
 - **Clearing and settlement transitions are service methods, not endpoints.**
   `markCleared` / `markSettled` are batch outcomes that Phase 4 will drive; they
   exist now only so refunds are reachable and testable.
+- **Idempotency rests on a UNIQUE index, not a prior existence check.** "Look,
+  then insert" is the broken version: two concurrent requests both look, both
+  see nothing, both proceed. Letting the database reject the second insert makes
+  the race impossible rather than merely unlikely.
+- **`IdempotencyStore` is a separate bean on purpose.** `@Transactional` works
+  through a proxy, and a self-invocation never reaches it — `REQUIRES_NEW` would
+  have been silently ignored, the claim would not have committed, and both
+  concurrent requests would have created a payment. An annotation that looks
+  correct while doing nothing.
+- **`Idempotency-Key` is mandatory, not optional**, on every money-moving
+  endpoint. An optional safety mechanism is the one omitted by the client least
+  able to handle a duplicate charge.
+- **A failed operation releases its key.** The operation is transactional, so
+  nothing committed; burning the key would leave the client unable to ever
+  complete that request.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.
@@ -178,7 +194,7 @@ infra/docker-compose.yml        PostgreSQL only
 
 ## What's next
 
-1. **Phase 1.5** — idempotency. **Phase 1.6** — the double-entry ledger.
+1. **Phase 1.6** — the double-entry ledger.
 2. **Any time:** create a GitHub remote so CI actually runs.
 
 ---

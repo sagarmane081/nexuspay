@@ -83,7 +83,7 @@ with a synthetic generator.
 
 ### 1.5 Idempotency
 - **Learn:** lost responses, client retries, request hashing, race conditions.
-- [ ] `Idempotency-Key` header; store key, request hash, status, response *(S)*
+- [x] `Idempotency-Key` header; store key, request hash, status, response — required on every money-moving endpoint
 - **Tests:** same key + same body → same response; same key + different body → 422;
   two concurrent identical requests → one payment.
 - **Talking point:** "My APIs are safe to retry, and I proved it with concurrent tests."
