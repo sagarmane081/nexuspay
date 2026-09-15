@@ -126,7 +126,8 @@ with a synthetic generator.
 
 ### 2.4 Gold
 - **Learn:** facts vs dimensions, aggregates, business-ready marts.
-- [ ] Daily settlement positions per participant, merchant revenue, reconciliation mart *(S)*
+- [x] Daily settlement positions per participant, merchant revenue, reconciliation mart
+  — plus a `ledger_balance` mart; every Gold row carries `batch_id` + `source_files`
 - **Tests (the core suite):**
   - count and JPY-sum reconciliation Source → Bronze → Silver → Gold
   - debits = credits preserved in every layer

@@ -36,6 +36,8 @@ decision, because the project's value is still that Sagar can defend it.
 | 2.1 Synthetic data generator | Done — 40 data-hub tests green |
 | 2.2 Lakehouse basics + Bronze | Done — 60 data-hub tests green |
 | 2.3 Silver | Done — 79 data-hub tests green |
+| 2.4 Gold + reconciliation suite | Done |
+| **Phase 2 complete** | medallion pipeline proven not to lose or create money |
 
 ### Verified, versus merely written
 
@@ -213,6 +215,16 @@ infra/docker-compose.yml        PostgreSQL only
 - **Generator faults claim disjoint rows.** They all used to start at row 0, so
   three faults landed on one payment and Silver — which reports the first
   matching rule per row — made two of them invisible.
+- **Every Gold row carries `batch_id` and `source_files`.** Aggregation is where
+  lineage usually dies: sum a million rows into one and "where did this number
+  come from?" becomes "somewhere". An unexplainable figure in a settlement
+  report is worse than no report, because somebody will act on it.
+- **The reconciliation suite has a negative half.** Three tests run deliberately
+  damaged batches and assert the pipeline notices. A reconciliation suite that
+  cannot fail proves nothing.
+- **Run the whole suite, in order, before believing it.** A shared SparkSession
+  bug hid for an entire phase because single-file runs never triggered it — see
+  the 2026-09-13 CI notes.
 - **CSV, not Parquet,** for the data contract — the failure modes the Phase 2
   suite must catch (corrupt rows, truncation, schema drift) are only
   reproducible in a text format.
